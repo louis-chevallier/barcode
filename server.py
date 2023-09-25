@@ -7,7 +7,7 @@ import cherrypy
 import threading
 import queue
 import json, pickle
-import process
+
 import time
 import time as _time
 from time import gmtime, strftime
@@ -19,7 +19,7 @@ fileDir = os.path.dirname(os.path.abspath(__file__))
 rootDir = os.path.join(fileDir, 'www')
 EKOX(rootDir)
 
-port = 8080
+port = 8081
 if "PORT" in os.environ :
         port = int(os.environ["PORT"])
 OK="OK"
@@ -47,16 +47,59 @@ class App:
     """
     def __init__(self, args) :
         EKOT("app init")
-
+        self.args = args
+        EKOT("listenning to %d" % port)
         
-    def info(self) :
-        return self.args.gitinfo
+    def info(self) : return "info" #self.args.gitinfo
         
     @cherrypy.expose
-    def main(self):
+    def index(self):
         EKOT("REQ main")
         with open('www/main.html', 'r') as file:
             data = file.read()
             data = data.replace("INFO", self.info())
             return data
-        
+    @cherrypy.expose
+            
+    def uploadPhoto(self, ufile):
+        '''receive a picture
+        '''
+        EKOT("REQ uploadPhoto")
+        try :
+            body = cherrypy.request.body
+            EKOX(body)
+            filename = ufile.filename
+            EKOX(filename)
+            destination = os.path.join(tmpphotos, filename)
+            EKOX(destination)
+            ext = os.path.splitext(filename)[1]
+            size = 0
+            with open(destination, 'wb') as out:
+                while True:
+                    data = ufile.file.read(8192)
+                    #EKOX(len(data))
+                    if not data:
+                        break
+                    out.write(data)
+                    size += len(data)
+            EKOX("done %d" % size)
+            image = Image.open(destination)
+            EKOT("good image")
+            rep = { STATUS : OK }
+            
+        except Exception as e :
+            EKOX(e)
+            rep = { STATUS : FAILED }
+        EKOX(rep)
+        return json.dumps(rep)
+
+if __name__ == '__main__':
+
+    app = App(sys.argv)
+    cherrypy.log.error_log.propagate = False
+    cherrypy.log.access_log.propagate = False
+    EKO()
+    cherrypy.quickstart(app, '/', config)
+    EKOT("end server", n=LOG)
+
+    
