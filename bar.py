@@ -71,7 +71,7 @@ class GBC :
         im = np.asarray(im)
         if transform is not None :
             h,w,_ = self.img0.shape
-            
+            back = np.zeros
             t = A.ShiftScaleRotate(shift_limit=0, scale_limit=0, rotate_limit=rot, p=.75)
             a = t(image=im)['image']
             augmented_image = transform(image=a)['image']

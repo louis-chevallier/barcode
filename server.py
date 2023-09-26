@@ -1,4 +1,7 @@
-
+import base64
+import io
+from PIL import Image
+import numpy as np
 
 import os, gc, sys
 import shutil
@@ -24,11 +27,12 @@ if "PORT" in os.environ :
         port = int(os.environ["PORT"])
 OK="OK"
 FAILED="FAILED"
+STATUS="status"
+
 config = {
     '/' : {
         'tools.staticdir.on': True,
         'tools.staticdir.dir': rootDir,
-        #      'tools.staticdir.dir': '/mnt/hd2/users/louis/dev/git/three.js/examples/test',
         
     },
     'global' : {
@@ -59,32 +63,20 @@ class App:
             data = file.read()
             data = data.replace("INFO", self.info())
             return data
-    @cherrypy.expose
-            
-    def uploadPhoto(self, ufile):
+    
+    @cherrypy.expose            
+    def uploadPhoto(self):
         '''receive a picture
         '''
         EKOT("REQ uploadPhoto")
         try :
-            body = cherrypy.request.body
-            EKOX(body)
-            filename = ufile.filename
-            EKOX(filename)
-            destination = os.path.join(tmpphotos, filename)
-            EKOX(destination)
-            ext = os.path.splitext(filename)[1]
-            size = 0
-            with open(destination, 'wb') as out:
-                while True:
-                    data = ufile.file.read(8192)
-                    #EKOX(len(data))
-                    if not data:
-                        break
-                    out.write(data)
-                    size += len(data)
-            EKOX("done %d" % size)
-            image = Image.open(destination)
-            EKOT("good image")
+            sz = int(cherrypy.request.headers['Content-Length'])
+            rawData = cherrypy.request.body.read(sz)
+            b = rawData
+            z = b[b.find(b'/9'):]
+            im = Image.open(io.BytesIO(base64.b64decode(z)))
+            nim = np.asarray(im)
+            EKOI(nim)
             rep = { STATUS : OK }
             
         except Exception as e :
